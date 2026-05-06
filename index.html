@@ -76,27 +76,49 @@
 
     <div id="modal-mesa" class="modal-overlay">
         <div class="modal-content">
-            <h2>Mesa: <span id="mesa-id-display"></span></h2>
+            <div class="modal-header">
+                <h2>Mesa: <span id="mesa-id-display"></span></h2>
+            </div>
             <form id="form-ocupacao">
-                <label for="nome-ocupante">Nome dos Ocupantes:</label>
-                <input type="text" id="nome-ocupante" required>
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="nome-ocupante">Nome dos Ocupantes:</label>
+                        <input type="text" id="nome-ocupante" required placeholder="Ex: João Silva">
+                    </div>
+                </div>
                 
-                <label for="observacoes">Observações:</label>
-                <textarea id="observacoes"></textarea>
-                
-                <label for="status-pagamento">Status de Pagamento:</label>
-                <select id="status-pagamento">
-                    <option value="nao-informado">Não Informado</option>
-                    <option value="pago">Pago</option>
-                    <option value="nao-pago">Não Pago</option>
-                </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="qtd-pessoas">Qtd. Pessoas:</label>
+                        <input type="number" id="qtd-pessoas" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="valor-mesa">Valor (R$):</label>
+                        <input type="number" id="valor-mesa" step="0.01" value="0.00">
+                    </div>
+                </div>
 
-                <label for="valor-mesa">Valor da Mesa (R$):</label>
-                <input type="number" id="valor-mesa" step="0.01" value="0.00">
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="status-pagamento">Status de Pagamento:</label>
+                        <select id="status-pagamento">
+                            <option value="nao-informado">Não Informado</option>
+                            <option value="pago">Pago</option>
+                            <option value="nao-pago">Não Pago</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="observacoes">Observações:</label>
+                        <textarea id="observacoes" rows="2" placeholder="Notas..."></textarea>
+                    </div>
+                </div>
 
                 <div class="botoes-modal">
-                    <button type="submit" class="btn-ocupar">Confirmar Ocupação</button>
-                    <button type="button" class="btn-liberar" data-mesa-id="">Liberar Mesa</button>
+                    <button type="submit" class="btn-ocupar">Confirmar</button>
+                    <button type="button" class="btn-liberar" data-mesa-id="">Liberar</button>
                     <button type="button" class="btn-fechar">Fechar</button> 
                 </div>
             </form>
@@ -122,7 +144,7 @@
     <script>
 
         // Cole o objeto firebaseConfig que você copiou do Firebase Console
-        const firebaseConfig = {
+       const firebaseConfig = {
     apiKey: "AIzaSyCfR73NePjEcAgGwNNtsyDriUTzwMzbmCU",
     authDomain: "reservas4.firebaseapp.com",
     databaseURL: "https://reservas4-default-rtdb.firebaseio.com",
