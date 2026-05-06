@@ -57,24 +57,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     mesa.classList.add('ocupada');
                     contador++;
                     
-                    // Salva os dados no elemento DOM
+                    // Salva os dados no elemento DOM (incluindo a nova quantidade)
                     mesa.dataset.dados = JSON.stringify({ 
                         nome: statusMesa.nome, 
                         obs: statusMesa.obs,
                         pagamento: statusMesa.pagamento,
-                        valor: statusMesa.valor
+                        valor: statusMesa.valor,
+                        qtd: statusMesa.qtd || '1' // Padrão 1 se não existir
                     }); 
                     
                     // CONSTRUÇÃO DO ITEM DA LISTA
                     const nome = statusMesa.nome || 'Não Informado';
+                    const qtd = statusMesa.qtd || '1';
                     const pagamento = statusMesa.pagamento ? statusMesa.pagamento.toUpperCase().replace('-', ' ') : 'N/A';
                     const valor = parseFloat(statusMesa.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     
                     listaHTML += `
                         <li>
-                            <strong>Mesa:</strong> ${mesaNome} | <strong>Cliente:</strong> ${nome}
-                            <br>
-                            <strong>Status:</strong> ${pagamento} | <strong>Valor:</strong> ${valor}
+                            <strong>Mesa:</strong> ${mesaNome} | <strong>Pessoas:</strong> ${qtd} | <strong>Cliente:</strong> ${nome}
+                            
                         </li>
                     `;
                     
@@ -110,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 document.getElementById('nome-ocupante').value = dados.nome || '';
                 document.getElementById('observacoes').value = dados.obs || '';
-                
+                document.getElementById('qtd-pessoas').value = dados.qtd || '1';
                 document.getElementById('status-pagamento').value = dados.pagamento || 'nao-informado';
                 document.getElementById('valor-mesa').value = dados.valor || '0.00'; 
                 
@@ -119,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 formOcupacao.reset();
                 document.getElementById('valor-mesa').value = '0.00'; 
+                document.getElementById('qtd-pessoas').value = '1';
                 
                 btnLiberar.style.display = 'none';
                 document.querySelector('.btn-ocupar').textContent = 'Confirmar Ocupação';
@@ -135,12 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mesaSelecionada) {
             const nome = document.getElementById('nome-ocupante').value;
             const obs = document.getElementById('observacoes').value;
+            const qtd = document.getElementById('qtd-pessoas').value;
             const statusPagamento = document.getElementById('status-pagamento').value;
             const valorMesa = document.getElementById('valor-mesa').value;
             
             const dadosParaFirebase = {
                 status: 'ocupada',
                 nome: nome,
+                qtd: qtd, // Enviando a quantidade
                 obs: obs,
                 pagamento: statusPagamento,
                 valor: valorMesa,
@@ -151,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             refMesas.child(mesaSelecionada.id).set(dadosParaFirebase)
                 .then(() => {
                     modalOverlay.style.display = 'none';
-                    alert(`Mesa ${mesaSelecionada.dataset.nome} ocupada/atualizada e sincronizada!`);
+                    alert(`Mesa ${mesaSelecionada.dataset.nome} atualizada com sucesso!`);
                 })
                 .catch(error => {
                     alert("Erro ao salvar no Firebase: " + error.message);
@@ -162,15 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 5. ☁️ Lógica de Liberar uma Mesa
     btnLiberar.addEventListener('click', () => {
         if (mesaSelecionada) {
-            
             const confirmar = confirm(`Tem certeza que deseja LIBERAR a mesa ${mesaSelecionada.dataset.nome}?`);
-            
             if (confirmar) {
-                // REMOVE O DADO DO FIREBASE
                 refMesas.child(mesaSelecionada.id).remove()
                     .then(() => {
                         modalOverlay.style.display = 'none';
-                        alert(`Mesa ${mesaSelecionada.dataset.nome} liberada e sincronizada!`);
+                        alert(`Mesa ${mesaSelecionada.dataset.nome} liberada!`);
                     })
                     .catch(error => {
                         alert("Erro ao liberar no Firebase: " + error.message);
@@ -179,35 +180,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 💡 LÓGICA DE RESET GERAL (LIBERAR TODAS AS MESAS)
+    // 💡 LÓGICA DE RESET GERAL
     btnResetGeral.addEventListener('click', () => {
+        const confirmar = confirm("ATENÇÃO: Você está prestes a LIMPAR TODAS as mesas. Deseja continuar?");
+        if (!confirmar) return;
         
-        // 1. Confirmação inicial
-        const confirmar = confirm("ATENÇÃO: Você está prestes a LIMPAR o status de TODAS as mesas. Essa ação é IRREVERSÍVEL. Deseja continuar?");
-        
-        if (!confirmar) {
-            return; // Sai se o usuário cancelar
-        }
-        
-        // 2. Confirmação de senha
-        const senhaDigitada = prompt("Para confirmar o RESET GERAL, digite a senha de reset:");
-        
+        const senhaDigitada = prompt("Digite a senha de reset:");
         if (senhaDigitada !== SENHA_RESET_GERAL) {
-            alert("Senha de reset incorreta. Ação cancelada.");
+            alert("Senha incorreta!");
             return;
         }
 
-        // 3. Execução do Reset
-        // Remove o nó pai 'mesas_status', limpando todos os dados.
         refMesas.remove()
-            .then(() => {
-                alert("✅ RESET GERAL CONCLUÍDO. Todas as mesas foram liberadas para um novo evento.");
-            })
-            .catch(error => {
-                alert("❌ Erro ao executar o Reset Geral no Firebase: " + error.message);
-            });
+            .then(() => { alert("✅ Todas as mesas foram liberadas."); })
+            .catch(error => { alert("❌ Erro: " + error.message); });
     });
-    
 
     // 6. Fechar Modal 
     botoesFechar.forEach(btn => { 
@@ -216,21 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // 7. 📊 Lógica de Exportação para CSV 
+    // 7. 📊 Lógica de Exportação para CSV (Atualizada com Qtd)
     btnExportar.addEventListener('click', () => {
+        if (!confirm('Deseja exportar a lista de ocupação?')) return;
         
-        // **INÍCIO DA NOVA PARTE**
-        // Adiciona a confirmação do usuário antes de continuar
-        if (!confirm('Deseja realmente exportar a lista de ocupação?')) {
-            return; // Cancela a exportação se o usuário clicar em "Cancelar"
-        }
-        // **FIM DA NOVA PARTE**
-        
-        // Pega o estado atual do Firebase
         refMesas.once('value').then((snapshot) => {
             const statusFirebase = snapshot.val() || {};
-            
-            let dadosCSV = "Mesa;Status;Nome dos Ocupantes;Pagamento;Valor (R$);Observacoes\n";
+            // Adicionado "Qtd Pessoas" ao cabeçalho
+            let dadosCSV = "Mesa;Status;Nome dos Ocupantes;Qtd Pessoas;Pagamento;Valor (R$);Observacoes\n";
             let mesasEncontradas = false;
 
             mesas.forEach(mesa => {
@@ -238,49 +218,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mesaNome = mesa.dataset.nome;
                 const statusDados = statusFirebase[mesaId];
 
-                let statusDisplay = "LIVRE";
-                let nomeOcupante = "";
-                let pagamentoStatus = "";
-                let valor = "0.00";
-                let obs = "";
+                let statusDisplay = "LIVRE", nomeOcupante = "", qtd = "0", pagamentoStatus = "", valor = "0.00", obs = "";
 
                 if (statusDados && statusDados.status === 'ocupada') {
                     statusDisplay = "OCUPADA";
-                    
                     nomeOcupante = statusDados.nome ? statusDados.nome.replace(/;/g, ',') : "";
+                    qtd = statusDados.qtd || "1";
                     pagamentoStatus = statusDados.pagamento || 'N/A';
                     valor = statusDados.valor || '0.00';
-                    
-                    // CORREÇÃO DE QUEBRA DE LINHA:
                     obs = statusDados.obs ? statusDados.obs.replace(/(\r\n|\n|\r)/gm, ' ').replace(/;/g, ',') : "";
                 }
                 
-                dadosCSV += `${mesaNome};${statusDisplay};${nomeOcupante};${pagamentoStatus};${valor};${obs}\n`;
+                // Incluindo a variável qtd na linha do CSV
+                dadosCSV += `${mesaNome};${statusDisplay};${nomeOcupante};${qtd};${pagamentoStatus};${valor};${obs}\n`;
                 mesasEncontradas = true;
             });
 
-            if (!mesasEncontradas) {
-                alert("Nenhuma mesa foi encontrada para exportação. Verifique se as mesas foram adicionadas ao HTML.");
-                return;
-            }
-
-            // Cria e inicia o download do arquivo
             const nomeArquivo = `Status_Mesas_${new Date().toISOString().slice(0, 10)}.csv`;
             const blob = new Blob(['\ufeff', dadosCSV], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', nomeArquivo);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
+            link.href = url;
+            link.download = nomeArquivo;
             link.click();
-            document.body.removeChild(link);
         });
     });
 
-    // Inicia o carregamento
     carregarStatusMesas();
 });
-
-
