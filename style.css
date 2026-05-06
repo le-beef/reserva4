@@ -170,15 +170,13 @@ h2 {
     display: none; /* Esconde o 'X' permanentemente quando ocupada */
 }
 
-/* 📝 Estilos do Modal (Pop-up) */
+/* 📝 Estilos do Modal Modernizado e Compacto */
 .modal-overlay {
     display: none; 
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
     justify-content: center;
     align-items: center;
     z-index: 1000;
@@ -186,46 +184,66 @@ h2 {
 
 .modal-content {
     background-color: white;
-    padding: 30px;
-    border-radius: 8px;
-    width: 350px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    text-align: left; /* Alinha o texto interno do modal */
+    padding: 25px;
+    border-radius: 12px;
+    width: 380px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* 💡 CORREÇÃO/ATUALIZAÇÃO DE ESTILOS DE FORMULÁRIO */
+.modal-header h2 {
+    background-color: #FFFF00; /* Mantendo seu destaque amarelo */
+    margin-bottom: 15px;
+    font-size: 1.2em;
+    padding: 5px 10px;
+    display: inline-block;
+}
+
+/* Organização em Linhas */
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.form-group { flex: 1; text-align: left; }
+.full-width { flex: 0 0 100%; }
+
 .modal-content label {
     display: block;
-    width: 100%;
-    margin-top: 10px; /* Mais espaço acima do label */
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    font-size: 13px;
     font-weight: bold;
 }
 
-.modal-content input[type="text"],
-.modal-content input[type="number"], /* NOVO: Estilo para o campo Valor */
-.modal-content textarea,
-.modal-content select { /* NOVO: Estilo para o campo Pagamento */
+.modal-content input, .modal-content select, .modal-content textarea {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 10px; /* Menos margem entre os campos */
+    padding: 8px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box; /* Garante que padding e border sejam incluídos na largura */
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
 }
 
-.modal-content button {
-    padding: 10px;
+/* Botões em linha */
+.botoes-modal {
+    display: flex;
+    gap: 5px;
     margin-top: 15px;
+}
+
+.botoes-modal button {
+    flex: 1;
+    padding: 10px 5px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
+    font-size: 12px;
 }
 
-.btn-ocupar { background-color: #4CAF50; color: white; }
-.btn-liberar { background-color: #f44336; color: white; }
-.btn-fechar { background-color: #ccc; color: #333; }
+.btn-ocupar { background-color: #27ae60; color: white; }
+.btn-liberar { background-color: #e74c3c; color: white; }
+.btn-fechar { background-color: #95a5a6; color: white; }
 
 /* Estilo do botão de exportação */
 #btn-exportar {
