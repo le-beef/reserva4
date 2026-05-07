@@ -1,15 +1,34 @@
-// Proteção Simples (Não segura)
-const senhaCorreta = "7878"; 
-let acessoPermitido = false;
+// LOGIN PERSISTENTE
+const senhaCorreta = "7878";
 
-while (!acessoPermitido) {
-    const senhaDigitada = prompt("Por favor, digite a senha para acessar o mapa:");
-    
-    if (senhaDigitada === senhaCorreta) {
-        acessoPermitido = true;
-        alert("Acesso concedido!");
-    } else {
-        alert("Senha incorreta. Tente novamente.");
+// LIMPA TESTE ANTIGO (use só 1 vez se quiser resetar)
+// localStorage.removeItem("logado");
+
+// VERIFICA LOGIN
+if (localStorage.getItem("logado") !== "sim") {
+    let acessoPermitido = false;
+    while (!acessoPermitido) {
+        const senhaDigitada = prompt("Por favor, digite a senha para acessar o mapa:");
+
+        // CANCELAR
+        if (senhaDigitada === null) {
+            location.reload();
+            break;
+        }
+
+        // SENHA CORRETA
+        if (senhaDigitada === senhaCorreta) {
+            acessoPermitido = true;
+
+            // SALVA LOGIN
+            localStorage.setItem("logado", "sim");
+            alert("Acesso concedido!");
+
+        } else {
+
+            alert("Senha incorreta. Tente novamente.");
+
+        }
     }
 }
 
