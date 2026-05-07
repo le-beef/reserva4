@@ -12,7 +12,6 @@ while (!acessoPermitido) {
         alert("Senha incorreta. Tente novamente.");
     }
 }
-// O restante do seu script.js só rodará se a senha estiver correta.
 
 document.addEventListener('DOMContentLoaded', () => {
     // 1. Seletores
@@ -24,16 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLiberar = document.querySelector('.btn-liberar');
     const btnExportar = document.getElementById('btn-exportar');
     
-    // NOVO SELETOR PARA O BOTÃO DE RESET
+    // Seletores dos Contadores e Inputs
+    const contadorMesas = document.getElementById('contador-mesas'); 
+    const contadorPessoas = document.getElementById('contador-pessoas'); 
+    const inputPessoas = document.getElementById('qtd-pessoas'); 
+    
+    // Seletor para o Botão de Reset
     const btnResetGeral = document.getElementById('btn-reset-geral');
 
     // Senha específica para o reset geral
     const SENHA_RESET_GERAL = "120805"; 
 
-    // SELETORES PARA A LISTA
+    // Seletores para a Lista
     const listaMesasOcupadas = document.getElementById('lista-mesas-ocupadas');
-    const contadorOcupadas = document.getElementById('contador-ocupadas');
-
+    
     let mesaSelecionada = null;
 
     // 2. ☁️ CARREGAR DADOS DO FIREBASE EM TEMPO REAL
@@ -46,7 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
         refMesas.on('value', (snapshot) => {
             const statusAtualizado = snapshot.val();
             let listaHTML = '';
-            let contador = 0;
+            let contadorM = 0; // Contador de Mesas
+            let totalP = 0;   // Contador de Pessoas
 
             mesas.forEach(mesa => {
                 const mesaId = mesa.id;
@@ -55,27 +59,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (statusMesa && statusMesa.status === 'ocupada') {
                     mesa.classList.add('ocupada');
-                    contador++;
                     
-                    // Salva os dados no elemento DOM (incluindo a nova quantidade)
+                    // Somando totais
+                    contadorM++;
+                    const qtdPessoasNaMesa = parseInt(statusMesa.qtd || 1);
+                    totalP += qtdPessoasNaMesa;
+                    
+                    // Salva os dados no elemento DOM
                     mesa.dataset.dados = JSON.stringify({ 
                         nome: statusMesa.nome, 
                         obs: statusMesa.obs,
                         pagamento: statusMesa.pagamento,
                         valor: statusMesa.valor,
-                        qtd: statusMesa.qtd || '1' // Padrão 1 se não existir
+                        qtd: qtdPessoasNaMesa
                     }); 
                     
-                    // CONSTRUÇÃO DO ITEM DA LISTA
+                    // CONSTRUÇÃO DO ITEM DA LISTA (Conforme seu print)
                     const nome = statusMesa.nome || 'Não Informado';
-                    const qtd = statusMesa.qtd || '1';
-                    const pagamento = statusMesa.pagamento ? statusMesa.pagamento.toUpperCase().replace('-', ' ') : 'N/A';
-                    const valor = parseFloat(statusMesa.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
                     
                     listaHTML += `
                         <li>
-                            <strong>Mesa:</strong> ${mesaNome} | <strong>Pessoas:</strong> ${qtd} | <strong>Cliente:</strong> ${nome}
-                            
+                            <strong>M:</strong> ${mesaNome} | <strong>QT.:</strong> ${qtdPessoasNaMesa} | <strong>N:</strong> ${nome}
                         </li>
                     `;
                     
@@ -85,17 +89,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // ATUALIZAÇÃO DA LISTA NO HTML
-            if (contador > 0) {
+            // ATUALIZAÇÃO DA INTERFACE
+            if (contadorM > 0) {
                 listaMesasOcupadas.innerHTML = listaHTML;
             } else {
                 listaMesasOcupadas.innerHTML = '<li>Nenhuma mesa ocupada no momento.</li>';
             }
-            contadorOcupadas.textContent = contador;
+            
+            // Atualiza os números nos contadores lá embaixo
+            if(contadorMesas) contadorMesas.textContent = contadorM;
+            if(contadorPessoas) contadorPessoas.textContent = totalP;
         });
     };
 
-    // 3. 🖱️ Adicionar ouvinte de clique para cada mesa
+    // 3. 🖱️ Abrir Modal ao clicar na mesa
     mesas.forEach(mesa => {
         mesa.addEventListener('click', () => {
             mesaSelecionada = mesa;
@@ -105,10 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
             modalDisplayId.textContent = mesaNome;
             btnLiberar.dataset.mesaId = mesa.id;
 
-            // Preenche o formulário
             if (isOcupada && mesa.dataset.dados) {
                 const dados = JSON.parse(mesa.dataset.dados);
-                
                 document.getElementById('nome-ocupante').value = dados.nome || '';
                 document.getElementById('observacoes').value = dados.obs || '';
                 document.getElementById('qtd-pessoas').value = dados.qtd || '1';
@@ -125,121 +130,75 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnLiberar.style.display = 'none';
                 document.querySelector('.btn-ocupar').textContent = 'Confirmar Ocupação';
             }
-            
             modalOverlay.style.display = 'flex';
         });
     });
 
-    // 4. ☁️ Lógica de Ocupar/Atualizar
+    // 4. ☁️ Lógica de Salvar (Ocupar/Atualizar)
     formOcupacao.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         if (mesaSelecionada) {
-            const nome = document.getElementById('nome-ocupante').value;
-            const obs = document.getElementById('observacoes').value;
-            const qtd = document.getElementById('qtd-pessoas').value;
-            const statusPagamento = document.getElementById('status-pagamento').value;
-            const valorMesa = document.getElementById('valor-mesa').value;
-            
             const dadosParaFirebase = {
                 status: 'ocupada',
-                nome: nome,
-                qtd: qtd, // Enviando a quantidade
-                obs: obs,
-                pagamento: statusPagamento,
-                valor: valorMesa,
+                nome: document.getElementById('nome-ocupante').value,
+                qtd: document.getElementById('qtd-pessoas').value,
+                obs: document.getElementById('observacoes').value,
+                pagamento: document.getElementById('status-pagamento').value,
+                valor: document.getElementById('valor-mesa').value,
                 timestamp: new Date().toISOString()
             };
 
-            // SALVA NO FIREBASE
             refMesas.child(mesaSelecionada.id).set(dadosParaFirebase)
                 .then(() => {
                     modalOverlay.style.display = 'none';
-                    alert(`Mesa ${mesaSelecionada.dataset.nome} atualizada com sucesso!`);
                 })
-                .catch(error => {
-                    alert("Erro ao salvar no Firebase: " + error.message);
-                });
+                .catch(error => alert("Erro ao salvar: " + error.message));
         }
     });
 
-    // 5. ☁️ Lógica de Liberar uma Mesa
+    // 5. ☁️ Lógica de Liberar
     btnLiberar.addEventListener('click', () => {
-        if (mesaSelecionada) {
-            const confirmar = confirm(`Tem certeza que deseja LIBERAR a mesa ${mesaSelecionada.dataset.nome}?`);
-            if (confirmar) {
-                refMesas.child(mesaSelecionada.id).remove()
-                    .then(() => {
-                        modalOverlay.style.display = 'none';
-                        alert(`Mesa ${mesaSelecionada.dataset.nome} liberada!`);
-                    })
-                    .catch(error => {
-                        alert("Erro ao liberar no Firebase: " + error.message);
-                    });
-            }
+        if (mesaSelecionada && confirm(`Liberar a mesa ${mesaSelecionada.dataset.nome}?`)) {
+            refMesas.child(mesaSelecionada.id).remove()
+                .then(() => { modalOverlay.style.display = 'none'; })
+                .catch(error => alert("Erro ao liberar: " + error.message));
         }
     });
     
     // 💡 LÓGICA DE RESET GERAL
     btnResetGeral.addEventListener('click', () => {
-        const confirmar = confirm("ATENÇÃO: Você está prestes a LIMPAR TODAS as mesas. Deseja continuar?");
-        if (!confirmar) return;
-        
-        const senhaDigitada = prompt("Digite a senha de reset:");
-        if (senhaDigitada !== SENHA_RESET_GERAL) {
+        if (!confirm("LIMPAR TODAS AS MESAS?")) return;
+        if (prompt("Digite a senha de reset:") === SENHA_RESET_GERAL) {
+            refMesas.remove().then(() => alert("✅ Tudo liberado."));
+        } else {
             alert("Senha incorreta!");
-            return;
         }
-
-        refMesas.remove()
-            .then(() => { alert("✅ Todas as mesas foram liberadas."); })
-            .catch(error => { alert("❌ Erro: " + error.message); });
     });
 
     // 6. Fechar Modal 
     botoesFechar.forEach(btn => { 
-        btn.addEventListener('click', () => {
-            modalOverlay.style.display = 'none';
-        });
+        btn.addEventListener('click', () => { modalOverlay.style.display = 'none'; });
     });
     
-    // 7. 📊 Lógica de Exportação para CSV (Atualizada com Qtd)
+    // 7. 📊 Exportação CSV
     btnExportar.addEventListener('click', () => {
-        if (!confirm('Deseja exportar a lista de ocupação?')) return;
-        
         refMesas.once('value').then((snapshot) => {
             const statusFirebase = snapshot.val() || {};
-            // Adicionado "Qtd Pessoas" ao cabeçalho
-            let dadosCSV = "Mesa;Status;Nome dos Ocupantes;Qtd Pessoas;Pagamento;Valor (R$);Observacoes\n";
-            let mesasEncontradas = false;
+            let dadosCSV = "Mesa;Status;Nome;Pessoas;Pagamento;Valor;Observacoes\n";
 
             mesas.forEach(mesa => {
-                const mesaId = mesa.id;
-                const mesaNome = mesa.dataset.nome;
-                const statusDados = statusFirebase[mesaId];
-
-                let statusDisplay = "LIVRE", nomeOcupante = "", qtd = "0", pagamentoStatus = "", valor = "0.00", obs = "";
-
-                if (statusDados && statusDados.status === 'ocupada') {
-                    statusDisplay = "OCUPADA";
-                    nomeOcupante = statusDados.nome ? statusDados.nome.replace(/;/g, ',') : "";
-                    qtd = statusDados.qtd || "1";
-                    pagamentoStatus = statusDados.pagamento || 'N/A';
-                    valor = statusDados.valor || '0.00';
-                    obs = statusDados.obs ? statusDados.obs.replace(/(\r\n|\n|\r)/gm, ' ').replace(/;/g, ',') : "";
+                const status = statusFirebase[mesa.id];
+                if (status && status.status === 'ocupada') {
+                    dadosCSV += `${mesa.dataset.nome};OCUPADA;${status.nome};${status.qtd};${status.pagamento};${status.valor};${status.obs}\n`;
+                } else {
+                    dadosCSV += `${mesa.dataset.nome};LIVRE;;0;;0.00;\n`;
                 }
-                
-                // Incluindo a variável qtd na linha do CSV
-                dadosCSV += `${mesaNome};${statusDisplay};${nomeOcupante};${qtd};${pagamentoStatus};${valor};${obs}\n`;
-                mesasEncontradas = true;
             });
 
-            const nomeArquivo = `Status_Mesas_${new Date().toISOString().slice(0, 10)}.csv`;
             const blob = new Blob(['\ufeff', dadosCSV], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = url;
-            link.download = nomeArquivo;
+            link.href = URL.createObjectURL(blob);
+            link.download = `Relatorio_LeBeef_${new Date().toISOString().slice(0, 10)}.csv`;
             link.click();
         });
     });
